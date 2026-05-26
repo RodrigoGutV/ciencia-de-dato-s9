@@ -1,0 +1,86 @@
+import pandas as pd
+#A-CARGA DEL ARCHIVO CSV
+df = pd.read_csv(
+    "moviciudad_operaciones_bruto_SET_A.csv"
+)
+
+#B-EXPLORACIÓN INICIAL
+print("Primeras filas:")
+print(df.head())
+
+print("\nInformación general:")
+print(df.info())
+
+print("\nValores nulos:")
+print(df.isnull().sum())
+
+#C-LIMPIEZA DE DATOS
+# Eliminar duplicados
+df = df.drop_duplicates()
+
+# Normalizar nombres de columnas
+df.columns = (
+    df.columns
+    .str.lower()
+    .str.strip()
+    .str.replace(" ", "_")
+)
+
+# Normalizar texto
+if "recorrido" in df.columns:
+    df["recorrido"] = (
+        df["recorrido"]
+        .astype(str)
+        .str.upper()
+        .str.strip()
+    )
+# Conversión de fechas
+if "fecha" in df.columns:
+    df["fecha"] = pd.to_datetime(
+        df["fecha"],
+        errors="coerce"
+    )
+
+# Conversión numérica
+if "tiempo_viaje" in df.columns:
+    df["tiempo_viaje"] = pd.to_numeric(
+        df["tiempo_viaje"],
+        errors="coerce"
+    )
+
+#D-TRATAMIENTO DE VALORES NULOS
+if "tiempo_viaje" in df.columns:
+    df["tiempo_viaje"] = (
+        df["tiempo_viaje"]
+        .fillna(df["tiempo_viaje"].median())
+    )
+
+#Eliminar filas sin recorrido
+if "recorrido" in df.columns:
+    df = df.dropna(subset=["recorrido"])
+
+#E-VALIDACIÓN DE DATOS
+if "tiempo_viaje" in df.columns:
+    df = df[df["tiempo_viaje"] > 0]
+
+#F-ESTRUCTURACIÓN
+df = df.reset_index(drop=True)
+
+#G-VARIABLES DERIVADAS
+if "fecha" in df.columns:
+    df["hora"] = df["fecha"].dt.hour
+
+#Indicador de congestión
+if "tiempo_viaje" in df.columns:
+    df["congestion"] = (
+        df["tiempo_viaje"] > 60
+    )
+
+# H-EXPORTAR DATOS LIMPIOS
+df.to_csv(
+    "moviciudad_operaciones_limpio.csv",
+    index=False
+)
+
+print("\nProceso completado correctamente.")
+print("Archivo limpio generado.")
